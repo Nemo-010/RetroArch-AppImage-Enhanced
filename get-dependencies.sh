@@ -29,7 +29,7 @@ echo "---------------------------------------------------------------"
 URL=$(curl -sL https://api.github.com/repos/libretro/RetroArch/releases/latest | \
 	jq -r '.assets[] | select(.name | startswith("retroarch-sourceonly-") and endswith(".tar.xz")) | .browser_download_url')
 
-[ -n "$URL" ] || { echo "ERROR: no se encontró el asset del release"; exit 1; }
+[ -n "$URL" ] || { echo "ERROR: release asset not found"; exit 1; }
 
 wget "$URL" -O ra.tar.xz
 
