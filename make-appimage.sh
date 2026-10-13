@@ -3,7 +3,7 @@
 set -eu
 
 ARCH=$(uname -m)
-VERSION=$(pacman -Q retroarch | awk '{print $2; exit}') # example command to get version of application here
+VERSION=$(cat ~/version)
 export ARCH VERSION
 export OUTPATH=./dist
 export ADD_HOOKS="self-updater.hook"
@@ -12,7 +12,11 @@ export ICON=/usr/share/pixmaps/com.libretro.RetroArch.svg
 export DESKTOP=/usr/share/applications/com.libretro.RetroArch.desktop
 
 # Deploy dependencies
-quick-sharun /usr/bin/retroarch /usr/lib/retroarch
+quick-sharun \
+	/usr/bin/retroarch \
+	/usr/lib/retroarch \
+	/usr/share/libretro \
+	/usr/lib/libretro
 
 # Additional changes can be done in between here
 
