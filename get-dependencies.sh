@@ -6,24 +6,79 @@ ARCH=$(uname -m)
 
 echo "Installing package dependencies..."
 echo "---------------------------------------------------------------"
-pacman -Syu --noconfirm retroarch
+pacman -Syu --noconfirm \
+	alsa-lib \
+	base-devel \
+	dbus \
+	ffmpeg \
+	fontconfig \
+	fribidi \
+	gamemode \
+	jq \
+	libdecor \
+	libdrm \
+	libgl \
+	libpipewire \
+	libpulse \
+	libusb \
+	libx11 \
+	libxcb \
+	libxext \
+	libxinerama \
+	libxkbcommon \
+	libxrandr \
+	libxxf86vm \
+	libxv \
+	mesa \
+	openssl \
+	qt6-base \
+	sdl2 \
+	v4l-utils \
+	vulkan-icd-loader \
+	wayland \
+	wayland-protocols \
+	wget \
+	xz \
+	zlib
 
 echo "Installing debloated packages..."
 echo "---------------------------------------------------------------"
 get-debloated-pkgs --add-common --prefer-nano ffmpeg-mini
 
-# Comment this out if you need an AUR package
-#make-aur-package PACKAGENAME
+echo "Fetching RetroArch source..."
+echo "---------------------------------------------------------------"
+URL=$(curl -sL https://api.github.com/repos/libretro/RetroArch/releases/latest | \
+	jq -r '.assets[] | select(.name | startswith("retroarch-sourceonly-") and endswith(".tar.xz")) | .browser_download_url')
 
-# If the application needs to be manually built that has to be done down here
+wget "$URL" -O ra.tar.xz
 
-# if you also have to make nightly releases check for DEVEL_RELEASE = 1
-#
-# if [ "${DEVEL_RELEASE-}" = 1 ]; then
-# 	nightly build steps
-# else
-# 	regular build steps
-# fi
+SRCDIR=$(tar -tf ra.tar.xz | head -n1 | cut -d/ -f1)
+tar -xf ra.tar.xz
+cd "$SRCDIR"
 
-# Note that when building manually, you want to output the version of the
-# application to a ~/version file and remove VERSION from make-appimage.sh
+echo "Building RetroArch..."
+echo "---------------------------------------------------------------"
+./configure \
+	--prefix=/usr \
+	--enable-builtinmbedtls \
+	--disable-builtinzlib \
+	--disable-cg \
+	--disable-jack \
+	--disable-oss \
+	--disable-sdl \
+	--enable-dbus
+
+make -j"$(nproc)"
+make -C libretro-common/audio/dsp_filters
+make -C gfx/video_filters
+
+echo "Installing RetroArch globally..."
+echo "---------------------------------------------------------------"
+make DESTDIR=/ install
+install -Dm 644 libretro-common/audio/dsp_filters/*.{dsp,so} -t /usr/lib/retroarch/filters/audio/
+install -Dm 644 gfx/video_filters/*.{filt,so} -t /usr/lib/retroarch/filters/video/
+
+echo "Saving version for the AppImage script..."
+echo "---------------------------------------------------------------"
+curl -sL https://api.github.com/repos/libretro/RetroArch/releases/latest | \
+	jq -r '.tag_name' | sed 's/^v//' > ~/version
