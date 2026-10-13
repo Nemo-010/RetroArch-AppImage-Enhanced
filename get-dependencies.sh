@@ -15,7 +15,6 @@ pacman -Syu --noconfirm \
 	libxinerama \
 	libxkbcommon \
 	libxv \
-	qt6-base \
 	sdl2 \
 	v4l-utils \
 	vulkan-icd-loader \
@@ -53,7 +52,9 @@ echo "---------------------------------------------------------------"
 	--disable-jack \
 	--disable-oss \
 	--disable-sdl \
-	--enable-dbus
+	--enable-dbus \
+	--disable-debug \
+	--disable-qt
 
 make -j"$(nproc)"
 make -C libretro-common/audio/dsp_filters
