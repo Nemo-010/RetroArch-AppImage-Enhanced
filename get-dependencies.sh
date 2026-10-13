@@ -7,39 +7,19 @@ ARCH=$(uname -m)
 echo "Installing package dependencies..."
 echo "---------------------------------------------------------------"
 pacman -Syu --noconfirm \
-	alsa-lib \
-	base-devel \
-	dbus \
-	ffmpeg \
 	fontconfig \
 	fribidi \
 	gamemode \
-	jq \
 	libdecor \
-	libdrm \
-	libgl \
 	libpipewire \
-	libpulse \
-	libusb \
-	libx11 \
-	libxcb \
-	libxext \
 	libxinerama \
 	libxkbcommon \
-	libxrandr \
-	libxxf86vm \
 	libxv \
-	mesa \
-	openssl \
 	qt6-base \
 	sdl2 \
 	v4l-utils \
 	vulkan-icd-loader \
-	wayland \
-	wayland-protocols \
-	wget \
-	xz \
-	zlib
+	wayland-protocols
 
 echo "Installing debloated packages..."
 echo "---------------------------------------------------------------"
@@ -49,6 +29,8 @@ echo "Fetching RetroArch source..."
 echo "---------------------------------------------------------------"
 URL=$(curl -sL https://api.github.com/repos/libretro/RetroArch/releases/latest | \
 	jq -r '.assets[] | select(.name | startswith("retroarch-sourceonly-") and endswith(".tar.xz")) | .browser_download_url')
+
+[ -n "$URL" ] || { echo "ERROR: no se encontró el asset del release"; exit 1; }
 
 wget "$URL" -O ra.tar.xz
 
