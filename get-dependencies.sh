@@ -38,6 +38,11 @@ SRCDIR=$(tar -tf ra.tar.xz | head -n1 | cut -d/ -f1)
 tar -xf ra.tar.xz
 cd "$SRCDIR"
 
+echo "Applying ffmpeg-9 compatibility patch..."
+echo "---------------------------------------------------------------"
+wget https://gitlab.archlinux.org/archlinux/packaging/packages/retroarch/-/raw/main/ffmpeg-9.patch -O /tmp/ffmpeg-9.patch
+patch -Np1 -i /tmp/ffmpeg-9.patch
+
 echo "Building RetroArch..."
 echo "---------------------------------------------------------------"
 ./configure \
