@@ -3,8 +3,7 @@
 set -eu
 
 ARCH=$(uname -m)
-VERSION=$(cat ~/version)
-export ARCH VERSION
+export ARCH
 export OUTPATH=./dist
 export ADD_HOOKS="self-updater.hook"
 export UPINFO="gh-releases-zsync|${GITHUB_REPOSITORY%/*}|${GITHUB_REPOSITORY#*/}|latest|*$ARCH.AppImage.zsync"
@@ -14,7 +13,7 @@ export DESKTOP=/usr/share/applications/com.libretro.RetroArch.desktop
 # Deploy dependencies
 quick-sharun \
 	/usr/bin/retroarch \
-	/usr/lib/retroarch
+	/usr/share/retroarch
 
 # Additional changes can be done in between here
 
