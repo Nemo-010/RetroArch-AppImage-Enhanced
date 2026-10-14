@@ -14,7 +14,7 @@ export DESKTOP=/usr/share/applications/com.libretro.RetroArch.desktop
 # Deploy dependencies
 quick-sharun \
 	/usr/bin/retroarch \
-	/usr/lib/retroarch
+	/usr/share/retroarch
 
 # Additional changes can be done in between here
 
