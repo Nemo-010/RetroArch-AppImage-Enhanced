@@ -1,0 +1,83 @@
+diff --git a/frontend/drivers/platform_unix.c b/frontend/drivers/platform_unix.c
+index e4ffe0f..62ee46b 100644
+--- a/frontend/drivers/platform_unix.c
++++ b/frontend/drivers/platform_unix.c
+@@ -1377,6 +1377,25 @@ static void frontend_unix_set_screen_brightness(int value)
+ 
+ #endif
+ 
++/* A portable install keeps its data next to the binary in
++ * <bindir>/../share/retroarch, which is the location a distro install
++ * resolves to as well (/usr/bin/retroarch -> /usr/share/retroarch) */
++static bool frontend_unix_portable_dir(const char *sub, char *s, size_t len)
++{
++   char dir[PATH_MAX]  = {0};
++   char base[PATH_MAX] = {0};
++
++   if (!fill_pathname_application_path(dir, sizeof(dir)))
++      return false;
++
++   path_basedir(dir);
++   path_basedir(dir);
++   fill_pathname_join_special(base, dir, "share/retroarch", sizeof(base));
++   fill_pathname_join_special(s, base, sub, len);
++
++   return path_is_directory(s);
++}
++
+ static void frontend_unix_get_env(int *argc,
+       char *argv[], void *data, void *params_data)
+ {
+@@ -1802,6 +1821,8 @@ static void frontend_unix_get_env(int *argc,
+       strlcpy(base_path, "retroarch", sizeof(base_path));
+ #endif
+ 
++   char portable_dir[PATH_MAX] = {0};
++
+    if (!string_is_empty(libretro_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], libretro_directory,
+             sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+@@ -1816,6 +1837,10 @@ static void frontend_unix_get_env(int *argc,
+    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
+          "core_info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+ #else
++   if (frontend_unix_portable_dir("cores", portable_dir, sizeof(portable_dir)))
++      strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], portable_dir,
++            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
++   else
+ #ifdef CORE_INFO_DIR
+    if (path_is_directory(CORE_INFO_DIR "/cores"))
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], CORE_INFO_DIR,
+@@ -1836,6 +1861,10 @@ static void frontend_unix_get_env(int *argc,
+    else
+        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
+             "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
++   if (frontend_unix_portable_dir("assets", portable_dir, sizeof(portable_dir)))
++      strlcpy(g_defaults.dirs[DEFAULT_DIR_ASSETS], portable_dir,
++            sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
++   else
+ #ifdef ASSETS_DIR
+    if (path_is_directory(ASSETS_DIR "/assets"))
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+@@ -1872,6 +1901,10 @@ static void frontend_unix_get_env(int *argc,
+    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], base_path,
+          "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+ #else
++   if (frontend_unix_portable_dir("filters/audio", portable_dir, sizeof(portable_dir)))
++      strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], portable_dir,
++            sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
++   else
+ #ifdef FILTERS_DIR
+    if (path_is_directory(FILTERS_DIR "/filters/audio"))
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+@@ -1899,6 +1932,10 @@ static void frontend_unix_get_env(int *argc,
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], base_path,
+             "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+ 
++   if (frontend_unix_portable_dir("filters/video", portable_dir, sizeof(portable_dir)))
++      strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], portable_dir,
++            sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
++   else
+ #ifdef FILTERS_DIR
+    if (path_is_directory(FILTERS_DIR "/filters/video"))
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
