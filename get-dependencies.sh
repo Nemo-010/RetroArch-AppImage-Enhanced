@@ -7,66 +7,95 @@ ARCH=$(uname -m)
 echo "Installing package dependencies..."
 echo "---------------------------------------------------------------"
 pacman -Syu --noconfirm \
-	fontconfig \
-	fribidi \
-	gamemode \
-	libdecor \
-	libpipewire \
-	libxinerama \
-	libxkbcommon \
-	libxv \
-	sdl2 \
-	v4l-utils \
-	vulkan-icd-loader \
-	wayland-protocols
+	dav1d             \
+	fontconfig        \
+	fribidi           \
+	gamemode          \
+	libdecor          \
+	libpipewire       \
+	libvpx            \
+	libxinerama       \
+	libxkbcommon      \
+	libxv             \
+	nasm              \
+	sdl2              \
+	v4l-utils         \
+	wayland-protocols \
+	x264
 
 echo "Installing debloated packages..."
 echo "---------------------------------------------------------------"
-get-debloated-pkgs --add-common --prefer-nano ffmpeg-mini
+get-debloated-pkgs --add-common --prefer-nano
 
-echo "Fetching RetroArch source..."
+# Comment this out if you need an AUR package
+#make-aur-package PACKAGENAME
+
+# If the application needs to be manually built that has to be done down here
+echo "Building static ffmpeg..."
 echo "---------------------------------------------------------------"
-URL=$(curl -sL https://api.github.com/repos/libretro/RetroArch/releases/latest | \
-	jq -r '.assets[] | select(.name | startswith("retroarch-sourceonly-") and endswith(".tar.xz")) | .browser_download_url')
+FFMPEG_VER=9.0.2
+git clone --branch "n$FFMPEG_VER" --single-branch --depth 1 https://github.com/FFmpeg/FFmpeg.git ./ffmpeg && (
+	cd ./ffmpeg
 
-[ -n "$URL" ] || { echo "ERROR: release asset not found"; exit 1; }
+	# RetroArch only uses ffmpeg to record, to play content and for its camera
+	# driver, so avfilter, the network stack and the optional dependencies that
+	# pull in most of the size are not needed
+	./configure                 \
+		--prefix=/usr/local     \
+		--enable-static         \
+		--disable-shared        \
+		--enable-pic            \
+		--enable-small          \
+		--enable-gpl            \
+		--enable-zlib           \
+		--disable-autodetect    \
+		--disable-programs      \
+		--disable-doc           \
+		--disable-network       \
+		--disable-avfilter      \
+		--enable-libdav1d       \
+		--enable-libopus        \
+		--enable-libvpx         \
+		--enable-libx264
 
-wget "$URL" -O ra.tar.xz
-
-SRCDIR=$(tar -tf ra.tar.xz | head -n1 | cut -d/ -f1)
-tar -xf ra.tar.xz
-cd "$SRCDIR"
-
-echo "Applying ffmpeg-9 compatibility patch..."
-echo "---------------------------------------------------------------"
-wget https://gitlab.archlinux.org/archlinux/packaging/packages/retroarch/-/raw/main/ffmpeg-9.patch -O /tmp/ffmpeg-9.patch
-patch -Np1 -i /tmp/ffmpeg-9.patch
+	make -j"$(nproc)"
+	make install
+)
 
 echo "Building RetroArch..."
 echo "---------------------------------------------------------------"
-./configure \
-	--prefix=/usr \
-	--enable-builtinmbedtls \
-	--disable-builtinzlib \
-	--disable-cg \
-	--disable-jack \
-	--disable-oss \
-	--disable-sdl \
-	--enable-dbus \
-	--disable-debug \
-	--disable-qt
+REPO="https://github.com/libretro/RetroArch"
+VERSION="$(git ls-remote --tags --sort="v:refname" "$REPO" | grep -v '\^{}' | tail -n1 | sed 's/.*\///; s/^v//')"
+git clone --branch "v$VERSION" --single-branch --depth 1 "$REPO" ./RetroArch && (
+	cd ./RetroArch
+	echo "$VERSION" > ~/version
 
-make -j"$(nproc)"
-make -C libretro-common/audio/dsp_filters
-make -C gfx/video_filters
+	# RetroArch 1.22.2 does not build against ffmpeg 9
+	wget -q https://gitlab.archlinux.org/archlinux/packaging/packages/retroarch/-/raw/main/ffmpeg-9.patch -O ./ffmpeg-9.patch
+	patch -Np1 -i ./ffmpeg-9.patch
 
-echo "Installing RetroArch globally..."
-echo "---------------------------------------------------------------"
-make DESTDIR=/ install
-install -Dm 644 libretro-common/audio/dsp_filters/*.{dsp,so} -t /usr/lib/retroarch/filters/audio/
-install -Dm 644 gfx/video_filters/*.{filt,so} -t /usr/lib/retroarch/filters/video/
+	# link the static ffmpeg built above
+	export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
 
-echo "Saving version for the AppImage script..."
-echo "---------------------------------------------------------------"
-curl -sL https://api.github.com/repos/libretro/RetroArch/releases/latest | \
-	jq -r '.tag_name' | sed 's/^v//' > ~/version
+	./configure                   \
+		--prefix=/usr             \
+		--enable-builtinmbedtls   \
+		--disable-builtinzlib     \
+		--disable-cg              \
+		--disable-jack            \
+		--disable-oss             \
+		--disable-sdl             \
+		--enable-dbus             \
+		--disable-debug           \
+		--disable-qt
+
+	make -j"$(nproc)"
+	make -C libretro-common/audio/dsp_filters
+	make -C gfx/video_filters
+	make install
+
+	# the DSP and video filters are not part of the make install target
+	mkdir -p /usr/lib/retroarch/filters/audio /usr/lib/retroarch/filters/video
+	cp -v libretro-common/audio/dsp_filters/*.dsp libretro-common/audio/dsp_filters/*.so /usr/lib/retroarch/filters/audio/
+	cp -v gfx/video_filters/*.filt gfx/video_filters/*.so /usr/lib/retroarch/filters/video/
+)
