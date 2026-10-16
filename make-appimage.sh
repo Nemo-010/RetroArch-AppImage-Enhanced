@@ -13,7 +13,8 @@ export DESKTOP=/usr/share/applications/com.libretro.RetroArch.desktop
 # Deploy dependencies
 quick-sharun \
 	/usr/bin/retroarch \
-	/usr/share/retroarch
+	/usr/share/retroarch \
+	/usr/lib/libOpenGL.so.0
 
 # Additional changes can be done in between here
 
