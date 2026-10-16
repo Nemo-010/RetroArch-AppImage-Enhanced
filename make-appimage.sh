@@ -14,7 +14,7 @@ export DESKTOP=/usr/share/applications/com.libretro.RetroArch.desktop
 quick-sharun \
 	/usr/bin/retroarch \
 	/usr/share/retroarch \
-	/usr/lib/libOpenGL.so.0
+	/usr/lib/libOpenGL.so*
 
 # Additional changes can be done in between here
 
