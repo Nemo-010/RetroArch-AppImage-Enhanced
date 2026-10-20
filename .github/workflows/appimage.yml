@@ -34,7 +34,7 @@ jobs:
 
   # this part runs via QEMU so expect higher CI times
   build-additional-cpu-arches:
-    if: false # set to true to build the below arches
+    if: true # set to true to build the below arches
     name: "${{ matrix.name }} (${{ matrix.arch }})"
     runs-on: ubuntu-latest
     strategy:
@@ -42,15 +42,15 @@ jobs:
       matrix:
         include:
           # comment out the arches that are not wanted
-          # note 'if: false' is set by default and these are all turned off
           - { name: Build AppImage, arch: riscv64, platform: linux/riscv64 }
           - { name: Build AppImage, arch: loongarch64, platform: linux/loong64 }
-          - { name: Build AppImage, arch: ppc64le, platform: linux/ppc64le }
-          - { name: Build AppImage, arch: ppc64, platform: linux/ppc64 } # BE
+          # ArchPOWER has no gamemode, which get-dependencies.sh installs
+          #- { name: Build AppImage, arch: ppc64le, platform: linux/ppc64le }
+          #- { name: Build AppImage, arch: ppc64, platform: linux/ppc64 } # BE
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build AppImage (emulated)
-        uses: pkgforge-dev/anylinux-setup-action/emulated@b2d1ce4216f71162e00ae58fa11ee9aeb723d0d5 # v5
+        uses: pkgforge-dev/anylinux-setup-action/emulated@ba7321e11074f9e387a0634e653d09b115d576cd # v6
         with:
           platform: ${{ matrix.platform }}
       - name: Upload artifact
